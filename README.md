@@ -17,14 +17,24 @@ pnpm install get-past-sponsors
 ```ts
 import getPastSponsors from "get-past-sponsors";
 
-await get('dohooo')
+await getPastSponsors('dohooo')
 .then(sponsors=>{
-  // ['username_0', 'username_0', 'username_0', 'username_0']
   console.log(sponsors)
 })
 .catch(e=>{
   console.error(e)
 })
+```
+
+## Types
+
+```ts
+interface IUser {
+    username: string
+    avatar: string
+}
+
+getPastSponsors(username: string): Promise<IUser[]>
 ```
 
 
