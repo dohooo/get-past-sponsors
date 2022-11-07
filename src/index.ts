@@ -5,7 +5,7 @@ export interface IUser {
     avatar: string
 }
 
-export default function (username: string) {
+export default function (username: string): Promise<IUser[]> {
     return new Promise(async (resolve, reject) => {
         const browser = await chromium.launch();
         const context = await browser.newContext();
