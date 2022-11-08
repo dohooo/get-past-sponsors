@@ -1,44 +1,65 @@
-import { chromium } from 'playwright'
+import { parse } from 'node-html-parser';
+import { fetch } from 'cross-fetch'
 
-export interface IUser {
+export type TPublicUser = {
     username: string
     avatar: string
 }
 
-export default function (username: string): Promise<IUser[]> {
-    return new Promise(async (resolve, reject) => {
-        const browser = await chromium.launch();
-        const context = await browser.newContext();
-        const page = await context.newPage();
-        await page.goto(`https://github.com/sponsors/${username}`);
-        let userIDs: IUser[] = []
-        try {
-            userIDs = await page.$$eval('#sponsors', (el) => {
-                if (!el) {
-                    return []
-                }
-                const pastSponsorshipsList = el[1].querySelector('remote-pagination>div')
-                const childrenCollection = Object.values(pastSponsorshipsList!.children || {})
-                const userIDs: IUser[] = []
-                childrenCollection.forEach((el: any, i) => {
-                    if (childrenCollection.length - 1 !== i) {
-                        const aTag = el?.children?.[0]
-                        const [, username] = (aTag?.getAttribute('href') || "").split('/') as unknown as string
-                        const imgTag = aTag?.children?.[0]
-                        const avatar = (imgTag?.getAttribute('src') || "") as unknown as string
-                        return userIDs.push({
-                            username,
-                            avatar
-                        })
-                    }
-                })
-                return userIDs
-            })
-        } catch (e) {
-            reject(new Error('User not found'))
-        } finally {
-            await browser.close();
-            resolve(userIDs)
+export type TPrivateUser = {
+    isPrivate: true
+}
+
+export type TUser = TPublicUser | TPrivateUser
+
+function pickSponsorsInfo(html: string, filter?: (user: TUser) => boolean): TUser[] {
+    const root = parse(html)
+    let sponsors = root.querySelectorAll('div').map(el => {
+        const publicSponsor = el.querySelector('img')
+
+        if (!publicSponsor) {
+            return {
+                isPrivate: true
+            } as TPrivateUser
         }
+
+        return {
+            username: publicSponsor?.getAttribute('alt')?.replace('@', ''),
+            avatar: publicSponsor?.getAttribute('src')
+        } as TPublicUser
     })
+
+    if (filter) {
+        sponsors = sponsors.filter(filter)
+    }
+
+    return sponsors
+}
+
+export default async function (username: string, options: {
+    /**
+     * @default true
+     * */
+    privateSponsor?: boolean
+} = {}): Promise<TUser[]> {
+
+
+    const { privateSponsor = true } = options
+
+    const allSponsors: TUser[] = [];
+    let newSponsors = []
+    let cursor = 1
+
+    do {
+        const content = await fetch(`https://github.com/sponsors/${username}/sponsors_partial?filter=inactive&page=${cursor++}`, { method: "GET" }).then(r => r.text())
+        newSponsors = pickSponsorsInfo(content, (user) => {
+            const isPrivate = 'isPrivate' in user && user.isPrivate
+            if (isPrivate) {
+                return privateSponsor
+            }
+            return true
+        })
+        allSponsors.push(...newSponsors)
+    } while (newSponsors.length)
+    return allSponsors
 }
