@@ -1,7 +1,7 @@
 {
   "name": "get-past-sponsors",
   "type": "module",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "packageManager": "pnpm@7.2.1",
   "description": "",
   "author": "Caspian Zhao <zhaodonghao586@outlook.com> (https://github.com/dohooo)",
