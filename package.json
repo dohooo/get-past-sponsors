@@ -44,9 +44,9 @@
     "prepublishOnly": "nr build",
     "release": "bumpp && npm publish",
     "start": "esno src/index.ts",
-    "test": "vitest",
-    "typecheck": "tsc --noEmit",
-    "prepublish": "pnpm run test"
+    "test": "vitest run",
+    "test:dev": "vitest dev",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@antfu/ni": "^0.16.2",
